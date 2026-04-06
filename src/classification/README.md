@@ -1,4 +1,4 @@
-# GeoConvNet
+# BahuMiteeya (GeoConvNet)
 
 **A Unified Convolutional Framework Across 1D, 2D, and 3D Geometric Domains**
 
