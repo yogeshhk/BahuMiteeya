@@ -87,7 +87,7 @@ def evaluate_pointnet2_baseline(data_dir: str, ckpt_path: str, device: torch.dev
     """
     print("\n[Baseline] Evaluating standalone PointNet++ checkpoint...")
     model = GeoConvNet3DPC(num_classes=40).to(device)
-    ckpt = torch.load(ckpt_path, map_location=device)
+    ckpt = torch.load(ckpt_path, map_location=device, weights_only=True)
     model.load_state_dict(ckpt["model"])
 
     _, test_loader = get_modelnet40_loaders(data_dir, batch_size=32)
@@ -114,7 +114,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load checkpoint
-    ckpt = torch.load(args.checkpoint, map_location=device)
+    ckpt = torch.load(args.checkpoint, map_location=device, weights_only=True)
 
     if args.domain == "1d":
         model = GeoConvNet1D(in_channels=1, num_classes=5).to(device)

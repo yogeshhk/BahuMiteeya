@@ -49,16 +49,25 @@ class SetAbstraction(nn.Module):
     """
     Single-scale set abstraction layer.
 
-    Samples npoint centroids, aggregates neighbors within radius r,
-    and extracts local features with a shared MLP.
+    Samples centroids via farthest-point sampling (FPS), aggregates neighbors
+    within radius r, and extracts local features with a shared MLP.
+
+    Args:
+        ratio:       FPS sampling ratio per sample (e.g. 0.5 keeps half the points).
+                     This is applied per-sample by PyG's fps(), so it is
+                     batch-size-independent.
+        r:           Ball-query radius for neighbourhood aggregation.
+        nsample:     Max neighbours per centroid.
+        in_channels: Per-point input feature channels (0 = xyz-only).
+        mlp_channels: MLP hidden/output channel widths (input width = in_channels+3).
     """
 
-    def __init__(self, npoint: int, radius: float, nsample: int, in_channels: int, mlp_channels: list[int]):
+    def __init__(self, ratio: float, r: float, nsample: int, in_channels: int, mlp_channels: list[int]):
         super().__init__()
         if not PYG_AVAILABLE:
             raise ImportError("torch_geometric required")
-        self.npoint = npoint
-        self.radius_val = radius
+        self.ratio = ratio        # fixed per-sample FPS ratio (batch-size-independent)
+        self.radius_val = r
         self.nsample = nsample
         self.conv = PointNetConv(
             local_nn=build_mlp([in_channels + 3] + mlp_channels),
@@ -66,8 +75,8 @@ class SetAbstraction(nn.Module):
         )
 
     def forward(self, x, pos, batch):
-        # Farthest point sampling
-        idx = fps(pos, batch, ratio=self.npoint / pos.size(0))
+        # FPS: self.ratio is applied per-sample by PyG, independent of batch size
+        idx = fps(pos, batch, ratio=self.ratio)
         row, col = radius(pos, pos[idx], self.radius_val,
                           batch, batch[idx], max_num_neighbors=self.nsample)
         edge_index = torch.stack([col, row], dim=0)
@@ -100,9 +109,11 @@ class GeoConvNet3DPC(nn.Module):
 
         c0 = in_channels  # 0 means xyz only; SA modules add 3 from pos concat
 
-        self.sa1 = SetAbstraction(512, 0.2, 32, c0, [64, 64, 128])
-        self.sa2 = SetAbstraction(128, 0.4, 64, 128, [128, 128, 256])
-        self.sa3 = SetAbstraction(1,   1e6, 128, 256, [256, 512, 1024])
+        # Ratios are per-sample and batch-size-independent (PyG fps applies ratio per sample).
+        # For 1024-point ModelNet40: SA1→512pts, SA2→128pts, SA3→16pts then global_max_pool.
+        self.sa1 = SetAbstraction(0.50,  0.2,  32,  c0,  [64, 64, 128])
+        self.sa2 = SetAbstraction(0.25,  0.4,  64,  128, [128, 128, 256])
+        self.sa3 = SetAbstraction(0.125, 1e6, 128,  256, [256, 512, 1024])
 
         self.head = nn.Sequential(
             nn.Linear(1024, 512, bias=False),

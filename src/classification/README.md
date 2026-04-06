@@ -26,7 +26,7 @@ All four encoders share a common training loop, evaluation protocol, and design 
 
 ```bash
 # 1. Clone
-git clone https://github.com/your-username/geoconvnet.git
+git clone https://github.com/yogeshhk/BahuMiteeya.git
 cd geoconvnet
 
 # 2. Install PyTorch (CUDA 11.8 example — adjust for your setup)

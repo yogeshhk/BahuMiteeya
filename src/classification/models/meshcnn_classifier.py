@@ -81,11 +81,15 @@ class MeshPool(nn.Module):
     """
     Mesh pooling via edge collapse.
 
-    Scores edges by their feature L2 norm and collapses the top-k% lowest-
-    scoring edges, averaging adjacent features.
+    Scores edges by their feature L2 norm and collapses the lowest-scoring edges.
 
-    This is a simplified (non-differentiable topology) version that collapses
-    edges in a batch-compatible manner.
+    This is a simplified version of MeshCNN pooling: it uses L2-norm of the
+    learned features as a fixed importance proxy (lower norm = less informative
+    = collapse first), rather than the full learnable edge-importance scoring in
+    the original paper (Hanocka et al., SIGGRAPH 2019). The topology update is
+    also simplified: collapsed edges are dropped and neighbor indices are
+    remapped rather than properly merging face-pairs. This is sufficient for
+    classification but differs from the full MeshCNN implementation.
 
     Args:
         target_edges: Number of edges to retain after pooling.
@@ -117,11 +121,11 @@ class MeshPool(nn.Module):
         x_pooled = x[keep_idx_sorted]
 
         # Remap neighbor indices (edges not kept → clamped to valid range)
-        remap = torch.full((E,), -1, dtype=torch.long)
-        remap[keep_idx_sorted] = torch.arange(self.target_edges)
+        remap = torch.full((E,), -1, dtype=torch.long, device=x.device)
+        remap[keep_idx_sorted] = torch.arange(self.target_edges, device=x.device)
         neighbors_remapped = remap[neighbor_idx[keep_idx_sorted].clamp(0, E - 1)]
         # Fill invalid (-1) neighbors with self-loop
-        self_idx = torch.arange(self.target_edges).unsqueeze(1).expand_as(neighbors_remapped)
+        self_idx = torch.arange(self.target_edges, device=x.device).unsqueeze(1).expand_as(neighbors_remapped)
         neighbors_remapped = torch.where(neighbors_remapped < 0, self_idx, neighbors_remapped)
 
         return x_pooled, neighbors_remapped
