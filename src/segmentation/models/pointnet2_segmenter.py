@@ -119,9 +119,9 @@ class GeoConvNet3DPCSeg(nn.Module):
     PointNet++ MSG encoder + 3-level FP decoder for per-point part segmentation.
 
     Encoder (3 SA levels):
-      SA1: ratio=0.5,  r=0.2  →  N/2  points,  128-dim features
-      SA2: ratio=0.25, r=0.4  →  N/8  points,  256-dim features
-      SA3: ratio=0.125,r=0.8  →  N/64 points,  512-dim features
+      SA1: ratio=0.50,  r=0.2  →  N/2  points,  128-dim features
+      SA2: ratio=0.25,  r=0.4  →  N/8  points,  256-dim features
+      SA3: ratio=0.25,  r=0.8  →  N/32 points,  512-dim features
 
     Decoder (3 FP levels, mirroring encoder):
       FP3: 512+256 → 256-dim  (N/8  points)
@@ -143,9 +143,10 @@ class GeoConvNet3DPCSeg(nn.Module):
         c = in_channels  # 0 → PointNetConv adds 3 (pos offset) internally
 
         # Encoder — ratios are per-sample (PyG fps applies them independently per shape):
-        # SA1: 0.50 × N   → N/2  points  (e.g. 1024 → 512)
-        # SA2: 0.25 × N/2 → N/8  points  (e.g. 512  → 128)
-        # SA3: 0.25 × N/8 → N/32 points  (e.g. 128  → 32)  — FP decoder restores full N
+        # SA1: 0.50 × N    → N/2  points  (e.g. 1024 → 512)
+        # SA2: 0.25 × N/2  → N/8  points  (e.g. 512  → 128)
+        # SA3: 0.25 × N/8  → N/32 points  (e.g. 128  → 32)  — FP decoder restores full N
+        # Note: SA3 uses ratio=0.25 (not 0.125), giving N/32, not N/64.
         self.sa1 = SetAbstraction(ratio=0.50, r=0.2, nn_channels=[c+3, 64,  64,  128])
         self.sa2 = SetAbstraction(ratio=0.25, r=0.4, nn_channels=[128+3, 128, 128, 256])
         self.sa3 = SetAbstraction(ratio=0.25, r=0.8, nn_channels=[256+3, 256, 256, 512])

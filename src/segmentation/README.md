@@ -109,21 +109,22 @@ The 3D point cloud encoder matches the standalone PointNet++ baseline under iden
 ## Repository Structure
 
 ```
-geoconvnet/
+src/segmentation/
 ├── models/
 │   ├── conv1d_segmenter.py      # 1D dilated encoder-decoder (motif segmentation)
 │   ├── conv2d_segmenter.py      # 2D U-Net (semantic segmentation)
 │   ├── pointnet2_segmenter.py   # PointNet++ encoder + FP decoder (part seg.)
 │   └── meshcnn_segmenter.py     # MeshCNN encoder-decoder (edge part seg.)
 ├── datasets/
-│   └── loaders.py               # Unified loaders: ECG5000, VOC, ShapeNetPart, COSEG
-├── paper/
-│   ├── paper.tex                # IEEE double-column LaTeX source
-│   └── references.bib           # 30 curated citations
+│   ├── loaders.py               # Unified loaders: ECG5000, VOC, ShapeNetPart, COSEG
+│   └── README.md                # Download instructions per dataset
 ├── train.py                     # Unified segmentation training loop (per-element CE + mIoU)
 ├── evaluate.py                  # Per-class IoU breakdown + PointNet++ comparison
-├── requirements.txt
-└── README.md
+└── requirements.txt
+
+publications/LaTeX/              # IEEE papers (repo root)
+│   ├── Main_geocovnet_segmentation_ieee_paper.tex
+│   └── segmentation_references.bib
 ```
 
 ---

@@ -42,11 +42,29 @@ Once you see this, a single framework becomes possible. BahuMeetiya is that fram
 
 ## Tasks Supported
 
+The three implemented tasks form a natural progression in output complexity:
+
+| Task | Output | N→? | Paper |
+|------|--------|-----|-------|
+| **Classification** | 1 global label | N → 1 | `publications/LaTeX/Main_geocovnet_classification_ieee_paper.tex` |
+| **Summarisation** | M-element summary (M ≪ N) | N → M | `publications/LaTeX/Main_geocovnet_summarisation_ieee_paper.tex` |
+| **Segmentation** | N per-element labels | N → N | `publications/LaTeX/Main_geocovnet_segmentation_ieee_paper.tex` |
+
 ### Classification
 Assign a label to an entire graph or each node within it.
 
 - **Graph classification**: "Is this molecule toxic?" / "What building type is this floorplan?"
 - **Node classification**: "Is this gate on the critical timing path?" / "Which surface patch belongs to which feature?"
+
+### Summarisation *(new)*
+Transform a large structured signal into a smaller, semantically equivalent one — a graph with fewer nodes and edges, a point cloud with fewer points, an image with fewer pixels, or a time series with fewer timesteps — while preserving downstream task performance and approximate reconstructibility.
+
+- **1D**: Compress a 140-step ECG to a 35-step representative summary (4× compression)
+- **2D**: Compress a 32×32 image to an 8×8 semantic summary (16× area compression)
+- **3D point cloud**: Reduce 1,024 points to 128 representative points (8× compression)
+- **3D mesh**: Coarsen a ~2,000-edge mesh to ~250 edges via learned edge collapse (8× compression)
+
+Trained with a dual objective: `α · CrossEntropy(downstream classification) + (1−α) · ReconLoss(reconstruction fidelity)`. The `α` parameter provides a principled knob for trading task preservation against reconstruction quality.
 
 ### Segmentation
 Partition graph nodes into meaningful groups, the graph equivalent of semantic segmentation.
@@ -79,27 +97,54 @@ without task-specific architectural surgery?
 ## Getting Started
 
 ```bash
-git clone https://github.com/yogeshhk/bahumeetiya.git
-cd bahumeetiya
-pip install -r requirements.txt
+git clone https://github.com/yogeshhk/BahuMiteeya.git
+cd BahuMiteeya
+
+# Install PyTorch first (adjust CUDA version for your system)
+pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118
+pip install torch-geometric torch-scatter torch-sparse
+pip install -r src/classification/requirements.txt
 ```
 
-**Run the EDA timing experiment (quickest demo):**
+**Run 1D time series classification (quickest demo):**
 ```bash
-python experiments/netlist_timing/netlist_gnn_timing.py
+cd src/classification
+# Download ECG5000 → data/ucr/ECG5000/ (see datasets/README.md)
+python train.py --domain 1d --data_dir data/ucr/ECG5000 --epochs 100
 ```
-Generates a synthetic chip netlist, trains a GNN to predict timing slack,
-and produces a colour-coded visualisation of predicted vs. actual slack across the netlist graph.
 
-**Run floorplan classification:**
+**Run 2D image classification (CIFAR-10 downloads automatically):**
 ```bash
-python experiments/floorplan_retrieval/train.py --config configs/floorplan_2d.yaml
+cd src/classification
+python train.py --domain 2d --data_dir data/cifar10 --batch 128
+```
+
+**Run 1D time series summarisation (4× compression, balanced dual loss):**
+```bash
+cd src/summarisation
+python train.py --domain 1d --data_dir data/ucr/ECG5000
+```
+
+**Run 3D point cloud summarisation (8×, task-preservation-focused):**
+```bash
+cd src/summarisation
+python train.py --domain 3dpc --data_dir data/modelnet40 --alpha 0.8
+```
+
+**Run 2D semantic segmentation (PASCAL VOC downloads automatically):**
+```bash
+cd src/segmentation
+python train.py --domain 2d --data_dir data/voc --num_classes 21
 ```
 
 **Run 3D mesh segmentation:**
 ```bash
-python experiments/midsurface_segmentation/train.py --config configs/midsurface_3d.yaml
+cd src/segmentation
+# Download COSEG → data/coseg/vases/ (see datasets/README.md)
+python train.py --domain mesh --data_dir data/coseg/vases --num_classes 4
 ```
+
+See `src/classification/README.md`, `src/summarisation/README.md`, and `src/segmentation/README.md` for full usage.
 
 ---
 
@@ -125,12 +170,14 @@ e3nn >= 0.5
 
 | Dataset | Dimension | Task | Source |
 |---------|-----------|------|--------|
-| Midsurface pairs | 3D→2D | Graph generation | Author-generated |
-| RPLAN | 2D | Floorplan segmentation | RPLAN public dataset |
-| ModelNet40 (graph form) | 3D | Mesh classification | ModelNet |
-| QM9 | 3D | Molecule property regression | PyG built-in |
-| Synthetic netlists | 2D | Timing slack prediction | This repo |
-| SECOM (semiconductor) | tabular+graph | Yield prediction | UCI |
+| UCR ECG5000 | 1D | Classification / Summarisation | [timeseriesclassification.com](https://timeseriesclassification.com) |
+| UCR ECG5000 (motif labels) | 1D | Segmentation | [timeseriesclassification.com](https://timeseriesclassification.com) |
+| CIFAR-10 | 2D | Classification / Summarisation | `torchvision` (auto-download) |
+| PASCAL VOC 2012 | 2D | Segmentation | `torchvision` (auto-download) |
+| ModelNet40 | 3D-PC | Classification / Summarisation | `torch_geometric` (auto-download) |
+| ShapeNetPart | 3D-PC | Segmentation | `torch_geometric` (auto-download) |
+| SHREC16 | 3D-Mesh | Classification / Summarisation | [MeshCNN repo](https://github.com/ranahanocka/MeshCNN#datasets) |
+| COSEG | 3D-Mesh | Segmentation | [MeshCNN repo](https://github.com/ranahanocka/MeshCNN#datasets) |
 
 ---
 

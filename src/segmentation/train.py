@@ -94,7 +94,7 @@ def run_epoch_1d(model, loader, criterion, optimizer, device, train,
 def run_epoch_2d(model, loader, criterion, optimizer, device, train,
                  num_classes):
     model.train() if train else model.eval()
-    total_loss, total_miou, n = 0.0, 0.0, 0
+    total_loss, total_miou, n, n_elems = 0.0, 0.0, 0, 0
     with torch.set_grad_enabled(train):
         for x, y in loader:
             # x: (B, 3, H, W)   y: (B, H, W) with -1 for ignore
@@ -105,11 +105,14 @@ def run_epoch_2d(model, loader, criterion, optimizer, device, train,
                 optimizer.zero_grad(); loss.backward(); optimizer.step()
             preds = logits.argmax(dim=1).view(-1).cpu()
             labs  = y.view(-1).cpu()
-            total_loss  += loss.item() * y.size(0)
+            total_loss  += loss.item() * y.numel()   # weight by B*H*W pixels
             total_miou  += compute_miou(preds, labs, num_classes,
                                         ignore_index=-1) * y.size(0)
-            n += y.size(0)
-    return total_loss / max(n, 1), total_miou / max(n, 1)
+            n       += y.size(0)
+            n_elems += y.numel()
+    # Divide loss by total pixels so reported value is per-pixel CE,
+    # consistent with run_epoch_1d (per-timestep) and run_epoch_3dpc (per-point).
+    return total_loss / max(n_elems, 1), total_miou / max(n, 1)
 
 
 def run_epoch_3dpc(model, loader, criterion, optimizer, device, train,

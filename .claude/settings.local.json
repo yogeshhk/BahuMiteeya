@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python models/conv1d_summariser.py)",
+      "Bash(python models/conv2d_summariser.py)",
+      "Bash(python models/meshcnn_summariser.py)",
+      "Bash(python models/pointnet2_summariser.py)"
+    ]
+  }
+}

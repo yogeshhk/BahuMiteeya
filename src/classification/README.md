@@ -91,21 +91,22 @@ python evaluate.py --domain mesh --checkpoint checkpoints/best_mesh.pt --data_di
 ## Repository Structure
 
 ```
-geoconvnet/
+src/classification/
 ├── models/
 │   ├── conv1d_classifier.py      # 1D residual CNN
 │   ├── conv2d_classifier.py      # 2D ResNet-18 variant
 │   ├── pointnet2_classifier.py   # PointNet++ (via PyG)
 │   └── meshcnn_classifier.py     # Edge-based MeshCNN
 ├── datasets/
-│   └── loaders.py                # Unified data loaders
-├── paper/
-│   ├── paper.tex                 # ACM sigconf LaTeX source
-│   └── references.bib            # Bibliography
+│   ├── loaders.py                # Unified data loaders
+│   └── README.md                 # Download instructions per dataset
 ├── train.py                      # Unified training loop
 ├── evaluate.py                   # Evaluation + baseline comparison
-├── requirements.txt
-└── README.md
+└── requirements.txt
+
+publications/LaTeX/               # IEEE papers (repo root)
+│   ├── Main_geocovnet_classification_ieee_paper.tex
+│   └── classification_references.bib
 ```
 
 ---

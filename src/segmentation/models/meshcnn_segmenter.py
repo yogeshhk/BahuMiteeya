@@ -109,7 +109,7 @@ class MeshPool(nn.Module):
         """
         E = x.size(0)
         if E <= self.target:
-            return x, nb, torch.arange(E)
+            return x, nb, torch.arange(E, device=x.device)
 
         scores    = x.norm(dim=1)
         keep_idx  = scores.argsort(descending=True)[:self.target]
@@ -185,9 +185,9 @@ class GeoConvNet3DMeshSeg(nn.Module):
       MeshConv(256→512)
 
     Decoder (edge unpool + skip concat + MeshConv):
-      Unpool(375→750) + skip(128) → MeshConv(512+128→256)
-      Unpool(750→1500) + skip(64) → MeshConv(256+64→128)
-      Unpool(1500→E)   + skip(5)  → MeshConv(128+64→64)
+      Unpool(375→750) + skip e3(256) → MeshConv(512+256→256)
+      Unpool(750→1500) + skip e2(128) → MeshConv(256+128→128)
+      Unpool(1500→E)   + skip e1(64)  → MeshConv(128+64→64)
 
     Head: per-edge Linear → K-class logits.
 

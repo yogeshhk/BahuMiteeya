@@ -6,11 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **BahuMiteeya** (meaning "multi-dimensional" in Sanskrit) hosts **GeoConvNet** — a research codebase demonstrating that convolution-based neural networks for 1D, 2D, and 3D data are instances of the same symmetry-constrained equivariant operation (per Bronstein et al., Geometric Deep Learning, 2021).
 
-The repo contains two parallel, self-contained sub-projects:
+The repo contains three parallel, self-contained sub-projects:
 - `src/classification/` — classifying whole samples (ECG, CIFAR-10, ModelNet40, SHREC16)
 - `src/segmentation/` — dense per-element labeling (ECG motifs, PASCAL VOC, ShapeNetPart, COSEG)
+- `src/summarisation/` — structural compression N→M (ECG, CIFAR-10, ModelNet40, SHREC16)
 
-Both sub-projects share the same four geometric domains: **1D time series**, **2D images**, **3D point clouds** (via PyTorch Geometric), and **3D meshes** (MeshCNN edge-based format).
+All sub-projects share the same four geometric domains: **1D time series**, **2D images**, **3D point clouds** (via PyTorch Geometric), and **3D meshes** (MeshCNN edge-based format).
+
+The three tasks form a progression:
+| Task | Output | N→? |
+|------|--------|-----|
+| Classification | 1 global label | N → 1 |
+| Summarisation | M-element summary (M ≪ N) | N → M |
+| Segmentation | N per-element labels | N → N |
 
 ## Installation
 
@@ -29,7 +37,7 @@ Python 3.10, PyTorch 2.1, CUDA 11.8 is the tested configuration.
 
 ## Commands
 
-All commands must be run from within the relevant sub-project directory (`src/classification/` or `src/segmentation/`) so that relative imports resolve correctly.
+All commands must be run from within the relevant sub-project directory (`src/classification/`, `src/segmentation/`, or `src/summarisation/`) so that relative imports resolve correctly.
 
 ### Training
 
@@ -48,6 +56,19 @@ python train.py --domain 1d   --data_dir data/ucr/ECG5000 --num_classes 6
 python train.py --domain 2d   --data_dir data/voc         --num_classes 21
 python train.py --domain 3dpc --data_dir data/shapenet    --num_classes 50
 python train.py --domain mesh --data_dir data/coseg/vases --num_classes 4
+```
+
+Summarisation adds `--alpha <float>` (classification vs. reconstruction weight):
+```bash
+cd src/summarisation
+
+python train.py --domain 1d   --data_dir data/ucr/ECG5000
+python train.py --domain 2d   --data_dir data/cifar10 --batch 128
+python train.py --domain 3dpc --data_dir data/modelnet40 --epochs 200
+python train.py --domain mesh --data_dir data/shrec16 --epochs 200
+
+# Adjust alpha (default 0.5): 1.0 = classification only, 0.0 = reconstruction only
+python train.py --domain 1d --data_dir data/ucr/ECG5000 --alpha 0.8
 ```
 
 Checkpoints are saved to `checkpoints/best_<domain>.pt`.
